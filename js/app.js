@@ -1,4 +1,4 @@
-import {AIEngine} from './ai-engine.js';
+import {AIEngine} from './ai-engine.js?v=0.1.1';
 import {SpeechAdapter} from './speech.js';
 import {RobotAdapter} from './robot.js';
 import {Expressions,EXPRESSIONS} from './expressions.js';

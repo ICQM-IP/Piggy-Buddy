@@ -17,6 +17,7 @@ export class AIEngine {
     this.engine = null;
     this.conversation = null;
     this._sdkLoader = sdkLoader;
+    this._samplerType = null;
     this._loading = null;
     this._unloading = null;
     this._generation = null;
@@ -74,6 +75,8 @@ export class AIEngine {
       const sdk = await this._sdkLoader();
       if (revision !== this._revision) throw aborted();
       if (typeof sdk?.Engine?.create !== 'function') throw new Error('LiteRT-LM SDK 載入失敗或 API 不相容。');
+      if (sdk.SamplerType?.TOP_P == null) throw new Error('LiteRT-LM SDK 缺少 SamplerType.TOP_P，請重新載入網頁。');
+      this._samplerType = sdk.SamplerType.TOP_P;
       const engine = await sdk.Engine.create({
         model: file,
         mainExecutorSettings: { maxNumTokens: 2048 },
@@ -120,7 +123,12 @@ export class AIEngine {
             content: `你係叻豬博士，香港小學 AI 助教。只用香港廣東話及繁體中文，友善有耐性。回答${length === 'long' ? '60至100' : '20至60'}字，第一句簡短有實際內容。用簡單例子，數學引導思考。不確定就承認。危險、欺凌、受傷或情緒困擾應鼓勵立即找老師協助。不要要求姓名或個人資料。不要產生不適齡內容。`,
           }],
         },
-        sessionConfig: { maxOutputTokens: length === 'long' ? 256 : 180 },
+        sessionConfig: {
+          maxOutputTokens: length === 'long' ? 256 : 180,
+          // This Web executor can be limited to top-k 1. Do not inherit the
+          // model's default k=64, which fails before the first token.
+          samplerParams: { type: this._samplerType, k: 1, p: 1, temperature: 0.7 },
+        },
       });
       operation.conversation = conversation;
       this.conversation = conversation;
